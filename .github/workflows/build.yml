@@ -1,7 +1,7 @@
-name: Build ImageGlass (Full Version)
+name: Build ImageGlass (Self-Contained)
 
 on:
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch: # Allows you to trigger the build manually with a click
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # Use the version specified in the project
+          dotnet-version: '8.0.x'
 
       - name: Build & Publish ImageGlass
         run: |
@@ -25,5 +25,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-Pro-Build-x64
+          name: ImageGlass-Win-x64
           path: ./publish
