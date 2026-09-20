@@ -1,5 +1,5 @@
-# This workflow builds and patches ImageGlass using the correct Lib project.
-name: Build Patched ImageGlass
+# This workflow builds and patches ImageGlass, with fixes for trimming and project paths.
+name: Build Patched ImageGlass (Final)
 
 on:
   workflow_dispatch: # Allows you to run this manually with a button click.
@@ -16,7 +16,6 @@ jobs:
           submodules: recursive
 
       # Step 2: Apply the patch to unlock Pro features.
-      # The patch target remains the same, as it's in the UI component project.
       - name: Patch ProGate to enable all features
         shell: pwsh
         run: |
@@ -35,15 +34,14 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       # Step 4: Build and publish the main application and its helper tool.
-      # The main build command now points to the ImageGlass.Lib.csproj file you specified.
       - name: Build and Publish ImageGlass
         shell: pwsh
         run: |
-          # Build the main app using the correct .csproj file
-          msbuild source/ImageGlass.Lib/ImageGlass.Lib.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishDir="${{ github.workspace }}\publish"
+          # Build the main app, now with trimming DISABLED to prevent errors.
+          msbuild source/ImageGlass.Lib/ImageGlass.Lib.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishTrimmed=false -p:PublishDir="${{ github.workspace }}\publish"
           
-          # Build the command-line helper tool and add it to the same folder
-          msbuild source/igcmd/igcmd.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishDir="${{ github.workspace }}\publish"
+          # Build the command-line helper tool, using its new, correct path.
+          msbuild source/ImageGlass.Cmd/ImageGlass.Cmd.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishTrimmed=false -p:PublishDir="${{ github.workspace }}\publish"
 
       # Step 5: Upload the final 'publish' folder as an artifact you can download.
       - name: Upload Artifact
