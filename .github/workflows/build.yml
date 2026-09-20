@@ -1,0 +1,29 @@
+name: Build ImageGlass (Self-Contained)
+
+on:
+  workflow_dispatch: # Allows you to trigger the build manually with a click
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build & Publish ImageGlass
+        run: |
+          dotnet publish src/ImageGlass/ImageGlass.csproj -c Release -r win-x64 --self-contained true -o ./publish
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImageGlass-Win-x64
+          path: ./publish
