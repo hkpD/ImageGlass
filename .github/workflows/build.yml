@@ -1,7 +1,7 @@
-name: Build ImageGlass (Full Version)
+name: Build ImageGlass
 
 on:
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,18 +13,23 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Build & Publish ImageGlass
-        # CORRECTED PATH is used here
-        run: |
-          dotnet publish v9/ImageGlass/ImageGlass.csproj -c Release -r win-x64 --self-contained true -o ./publish
+      - name: Restore
+        run: msbuild v9/ImageGlass/ImageGlass.csproj -t:Restore -p:Configuration=Release -p:RuntimeIdentifier=win-x64
+
+      - name: Publish
+        run: >
+          msbuild v9/ImageGlass/ImageGlass.csproj
+          -t:Publish
+          -p:Configuration=Release
+          -p:RuntimeIdentifier=win-x64
+          -p:SelfContained=true
+          -p:PublishDir=${{ github.workspace }}\publish\
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-Pro-Build-x64
+          name: ImageGlass-win-x64
           path: ./publish
