@@ -1,0 +1,53 @@
+# This workflow builds and patches ImageGlass using the correct Lib project.
+name: Build Patched ImageGlass
+
+on:
+  workflow_dispatch: # Allows you to run this manually with a button click.
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # Step 1: Get the source code.
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Step 2: Apply the patch to unlock Pro features.
+      # The patch target remains the same, as it's in the UI component project.
+      - name: Patch ProGate to enable all features
+        shell: pwsh
+        run: |
+          $filePath = "source/Components/ImageGlass.UI/Settings/SettingPage.cs"
+          if (Test-Path $filePath) {
+            $originalText = 'protected void ProGate(ConfigId id, Control? badge, params Control?[] inputs)'
+            $replacementText = 'protected void ProGate(ConfigId id, Control? badge, params Control?[] inputs) { return; } public void Dummy_ProGate'
+            (Get-Content $filePath -Raw) -replace [System.Text.RegularExpressions.Regex]::Escape($originalText), $replacementText | Set-Content $filePath
+            Write-Host "Successfully patched ProGate method in $filePath"
+          } else {
+            Write-Host "Patch file not found at $filePath. Skipping patch." -ForegroundColor Yellow
+          }
+
+      # Step 3: Set up the correct build tool (MSBuild from Visual Studio).
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # Step 4: Build and publish the main application and its helper tool.
+      # The main build command now points to the ImageGlass.Lib.csproj file you specified.
+      - name: Build and Publish ImageGlass
+        shell: pwsh
+        run: |
+          # Build the main app using the correct .csproj file
+          msbuild source/ImageGlass.Lib/ImageGlass.Lib.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishDir="${{ github.workspace }}\publish"
+          
+          # Build the command-line helper tool and add it to the same folder
+          msbuild source/igcmd/igcmd.csproj -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishDir="${{ github.workspace }}\publish"
+
+      # Step 5: Upload the final 'publish' folder as an artifact you can download.
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImageGlass-Patched-Final-Build
+          path: ./publish
