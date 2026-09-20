@@ -1,5 +1,5 @@
-# This workflow builds and patches ImageGlass, with separated build steps for robustness.
-name: Build Patched ImageGlass (Final)
+# This workflow builds and patches the 'prod' branch of ImageGlass.
+name: Build Patched ImageGlass (from PROD branch)
 
 on:
   workflow_dispatch: # Allows you to run this manually with a button click.
@@ -9,10 +9,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Get the source code.
-      - name: Checkout Code
+      # Step 1: Get the source code from the CORRECT branch.
+      - name: Checkout 'prod' branch
         uses: actions/checkout@v4
         with:
+          ref: prod  # <--- THIS IS THE FIX.
           submodules: recursive
 
       # Step 2: Apply the patch to unlock Pro features.
@@ -26,7 +27,7 @@ jobs:
             (Get-Content $filePath -Raw) -replace [System.Text.RegularExpressions.Regex]::Escape($originalText), $replacementText | Set-Content $filePath
             Write-Host "Successfully patched ProGate method in $filePath"
           } else {
-            Write-Host "Patch file not found at $filePath. Skipping patch." -ForegroundColor Yellow
+            Write-Host "Patch file not found at $filePath. This is expected if the file moved." -ForegroundColor Yellow
           }
 
       # Step 3: Set up the correct build tool (MSBuild from Visual Studio).
@@ -45,7 +46,7 @@ jobs:
           -p:PublishTrimmed=false 
           -p:PublishDir="${{ github.workspace }}\publish"
 
-      # Step 4.2: Build and publish the COMMAND-LINE helper and add it to the same folder.
+      # Step 4.2: Build and publish the COMMAND-LINE helper.
       - name: Build and Publish Command-Line App (ImageGlass.Cmd)
         run: >
           msbuild source/ImageGlass.Cmd/ImageGlass.Cmd.csproj 
@@ -61,5 +62,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-Patched-Final-Build
+          name: ImageGlass-Patched-PROD-Build
           path: ./publish
