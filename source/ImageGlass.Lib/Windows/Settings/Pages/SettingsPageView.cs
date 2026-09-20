@@ -127,18 +127,22 @@ public abstract class SettingsPageView : PhControl
     /// Pro-gates a setting: when Pro is not active, reveals the ✦ Pro badge (a <see cref="PhProBadge"/>
     /// sibling, which carries its own hover + tooltip) and disables the given input controls.
     /// </summary>
-    protected void ProGate(ConfigId id, Control? badge, params Control?[] inputs)
+// THE PATCHED "OPEN DOOR" SCRIPT
+protected void ProGate(ConfigId id, Control? badge, params Control?[] inputs)
+{
+    // The bouncer's only instruction is to go home immediately.
+    // The rest of the original code is never even reached.
+    return; 
+    
+    if (!Config.IsConfigProGated(id)) return;
+
+    if (badge is not null) badge.IsVisible = true;
+
+    foreach (var input in inputs)
     {
-        if (!Config.IsConfigProGated(id)) return;
-
-        if (badge is not null) badge.IsVisible = true;
-
-        foreach (var input in inputs)
-        {
-            if (input is not null) input.IsEnabled = false;
-        }
+        if (input is not null) input.IsEnabled = false;
     }
-
+}
 
     /// <summary>
     /// Registers a setting row into the shared search index.
