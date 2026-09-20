@@ -1,7 +1,7 @@
-name: Build ImageGlass (Self-Contained)
+name: Build ImageGlass (Full Version)
 
 on:
-  workflow_dispatch: # Allows you to trigger the build manually with a click
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   build:
@@ -19,11 +19,12 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build & Publish ImageGlass
+        # CORRECTED PATH is used here
         run: |
-          dotnet publish src/ImageGlass/ImageGlass.csproj -c Release -r win-x64 --self-contained true -o ./publish
+          dotnet publish src/ImageGlass.App/ImageGlass.App.csproj -c Release -r win-x64 --self-contained true -o ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-Win-x64
+          name: ImageGlass-Pro-Build-x64
           path: ./publish
