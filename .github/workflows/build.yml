@@ -1,7 +1,7 @@
-name: Build ImageGlass
+name: Build ImageGlass (Full Version)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   build:
@@ -11,24 +11,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: recursive  # CRITICAL: Pulls in all external dependencies
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-      - name: Restore & Publish
-        run: >
-          msbuild v9/ImageGlass/ImageGlass.csproj
-          -restore
-          -t:Publish
-          -p:Configuration=Release
-          -p:RuntimeIdentifier=win-x64
-          -p:SelfContained=true
-          -p:PublishSingleFile=false
-          -p:PublishDir=${{ github.workspace }}\publish\
+      - name: Restore Dependencies
+        # Restores all NuGet packages for the entire solution
+        run: |
+          dotnet restore v9/ImageGlass.sln
+
+      - name: Build & Publish ImageGlass
+        # Build the SOLUTION, not just the project
+        run: |
+          dotnet publish v9/ImageGlass.sln -c Release -r win-x64 --self-contained true -o ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-win-x64
+          name: ImageGlass-Pro-Build-x64
           path: ./publish
