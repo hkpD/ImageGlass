@@ -1,5 +1,5 @@
-# This workflow builds and patches the 'prod' branch of ImageGlass.
-name: Build Patched ImageGlass (from PROD branch)
+# This workflow builds and patches ImageGlass by checking out the ORIGINAL d2phap/ImageGlass repository.
+name: Build Patched ImageGlass (from Original Repo)
 
 on:
   workflow_dispatch: # Allows you to run this manually with a button click.
@@ -9,14 +9,28 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Get the source code from the CORRECT branch.
-      - name: Checkout 'prod' branch
+      # Step 1: THE CRITICAL FIX. Ignore the fork and get the code from the original source.
+      - name: Checkout 'prod' branch from d2phap/ImageGlass
         uses: actions/checkout@v4
         with:
-          ref: prod  # <--- THIS IS THE FIX.
+          repository: d2phap/ImageGlass  # <--- This is the most important line.
+          ref: prod                     # <--- Get the 'prod' branch.
           submodules: recursive
 
-      # Step 2: Apply the patch to unlock Pro features.
+      # Step 2: Verify that the file now exists before we do anything else.
+      - name: Verify project file exists
+        shell: pwsh
+        run: |
+          $cmdPath = "source/ImageGlass.Cmd/ImageGlass.Cmd.csproj"
+          Write-Host "Checking for file at: $cmdPath"
+          if (Test-Path $cmdPath) {
+            Write-Host "SUCCESS: The project file was found."
+          } else {
+            Write-Host "FATAL ERROR: The project file was NOT found even after checking out the original repo." -ForegroundColor Red
+            exit 1
+          }
+
+      # Step 3: Apply the patch to unlock Pro features.
       - name: Patch ProGate to enable all features
         shell: pwsh
         run: |
@@ -30,37 +44,23 @@ jobs:
             Write-Host "Patch file not found at $filePath. This is expected if the file moved." -ForegroundColor Yellow
           }
 
-      # Step 3: Set up the correct build tool (MSBuild from Visual Studio).
+      # Step 4: Set up the correct build tool (MSBuild from Visual Studio).
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # Step 4.1: Build and publish the MAIN application.
+      # Step 5: Build the main application and the command-line helper.
       - name: Build and Publish Main App (ImageGlass.Lib)
         run: >
           msbuild source/ImageGlass.Lib/ImageGlass.Lib.csproj 
-          -restore 
-          -t:Publish 
-          -p:Configuration=Release 
-          -p:Platform=x64 
-          -p:RuntimeIdentifier=win-x64 
-          -p:PublishTrimmed=false 
-          -p:PublishDir="${{ github.workspace }}\publish"
-
-      # Step 4.2: Build and publish the COMMAND-LINE helper.
+          -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishTrimmed=false -p:PublishDir="${{ github.workspace }}\publish"
       - name: Build and Publish Command-Line App (ImageGlass.Cmd)
         run: >
           msbuild source/ImageGlass.Cmd/ImageGlass.Cmd.csproj 
-          -restore 
-          -t:Publish 
-          -p:Configuration=Release 
-          -p:Platform=x64 
-          -p:RuntimeIdentifier=win-x64 
-          -p:PublishTrimmed=false 
-          -p:PublishDir="${{ github.workspace }}\publish"
+          -restore -t:Publish -p:Configuration=Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:PublishTrimmed=false -p:PublishDir="${{ github.workspace }}\publish"
 
-      # Step 5: Upload the final 'publish' folder as an artifact.
+      # Step 6: Upload the final artifact.
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageGlass-Patched-PROD-Build
+          name: ImageGlass-Patched-PROD-Build-Final
           path: ./publish
