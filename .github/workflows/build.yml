@@ -21,7 +21,7 @@ jobs:
       - name: Build & Publish ImageGlass
         # CORRECTED PATH is used here
         run: |
-          dotnet publish src/ImageGlass.App/ImageGlass.App.csproj -c Release -r win-x64 --self-contained true -o ./publish
+          dotnet publish v9/ImageGlass/ImageGlass.csproj -c Release -r win-x64 --self-contained true -o ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
